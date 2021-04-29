@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CharacterController : MonoBehaviour
+public class CharacterControllerP2 : MonoBehaviour
 {
     [SerializeField]
     private GameObject spawnPoint;
-
 
     public GameObject opponent;
 
@@ -62,6 +61,7 @@ public class CharacterController : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        
     }
 
     // Update is called once per frame
@@ -77,7 +77,7 @@ public class CharacterController : MonoBehaviour
     public void checkInput()
     {
 
-        if (Input.GetButtonDown("Dash"))
+        if (Input.GetButtonDown("Dash2"))
         {
             if (Time.time >= (lastDash + dashCoolDown)) AttempToDash();
         }
@@ -92,7 +92,7 @@ public class CharacterController : MonoBehaviour
     {
         if (canMove)
         {
-            var movement = Input.GetAxis("Horizontal");
+            var movement = Input.GetAxis("Horizontal2");
             if (movement != 0) anim.SetBool("walking", true);
             else anim.SetBool("walking", false);
             characterScale = transform.localScale;
@@ -112,12 +112,12 @@ public class CharacterController : MonoBehaviour
     {
         if (canFlip)
         {
-            if (Input.GetAxis("Horizontal") < 0)
+            if (Input.GetAxis("Horizontal2") < 0)
             {
                 characterScale.x = -4f;
                 facingDirection = -1;
             }
-            else if (Input.GetAxis("Horizontal") > 0)
+            else if (Input.GetAxis("Horizontal2") > 0)
             {
                 characterScale.x = 4f;
                 facingDirection = 1;
@@ -140,7 +140,7 @@ public class CharacterController : MonoBehaviour
 
                 if (Mathf.Abs(transform.position.x - lastImageXpos) > distanceBetweenImages)
                 {
-                    PlayerAfterImagePool.Instance.GetFromPool();
+                    PlayerAfterImagePool2.Instance.GetFromPool();
                     lastImageXpos = transform.position.x;
                 }
             }
@@ -169,7 +169,7 @@ public class CharacterController : MonoBehaviour
             isAttacking = true;
             attackTimeLeft = attackTime;
             // Play attack animation according to combo
-            
+
             Debug.Log(Time.realtimeSinceStartup - lastAttack);
 
 
@@ -197,13 +197,13 @@ public class CharacterController : MonoBehaviour
         if (canDash)
         {
             Physics2D.IgnoreCollision(opponent.GetComponent<Collider2D>(), GetComponent<Collider2D>(), true);
+            rb.isKinematic = true;
             anim.SetBool("dashing", true);
             isDashing = true;
             dashTimeLeft = dashTime;
             lastDash = Time.time;
-            rb.isKinematic = true;
 
-            PlayerAfterImagePool.Instance.GetFromPool();
+            PlayerAfterImagePool2.Instance.GetFromPool();
             lastImageXpos = transform.position.x;
         }
     }
