@@ -4,6 +4,10 @@ using UnityEngine;
 
 public class CharacterController : MonoBehaviour
 {
+    [SerializeField]
+    private GameObject spawnPoint;
+
+
     public Animator anim;
 
     public Transform attackPoint;
@@ -106,12 +110,12 @@ public class CharacterController : MonoBehaviour
         {
             if (Input.GetAxis("Horizontal") < 0)
             {
-                characterScale.x = -5f;
+                characterScale.x = -4f;
                 facingDirection = -1;
             }
             else if (Input.GetAxis("Horizontal") > 0)
             {
-                characterScale.x = 5f;
+                characterScale.x = 4f;
                 facingDirection = 1;
             }
             transform.localScale = characterScale;
@@ -223,6 +227,15 @@ public class CharacterController : MonoBehaviour
             canDash = true;
             isAttacking = false;
             lastAttack = Time.realtimeSinceStartup;
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.tag == "Death")
+        {
+            Debug.Log("Died");
+            transform.position = spawnPoint.transform.position;
         }
     }
 }
