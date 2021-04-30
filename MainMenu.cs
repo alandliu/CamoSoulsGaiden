@@ -22,4 +22,10 @@ public class MainMenu : MonoBehaviour
         Debug.Log("Quit");
         Application.Quit();
     }
+
+    public void secret()
+    {
+        // If you found this by script fuck you
+        SceneManager.LoadScene(5);
+    }
 }
