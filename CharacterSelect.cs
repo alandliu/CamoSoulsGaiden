@@ -15,6 +15,8 @@ public class CharacterSelect : MonoBehaviour
     [SerializeField]
     private GameObject nextButton;
 
+    public string[] start = new string[] {"kS", "rS", "aS"};
+
 
     public int turn = 0;
     public int player1Index;
@@ -23,7 +25,7 @@ public class CharacterSelect : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        //FindObjectOfType<AudioManager>().Play("Music");
     }
 
     // Update is called once per frame
@@ -47,6 +49,8 @@ public class CharacterSelect : MonoBehaviour
         {
             characterSS[index].SetActive(true);
             player1Index = index;
+            if (player1Index > 2) FindObjectOfType<AudioManager>().Play(start[player1Index - 1]);
+            else if (player1Index < 2) FindObjectOfType<AudioManager>().Play(start[player1Index]);
             turn++;
         }
         else if (turn == 1) {
@@ -54,6 +58,9 @@ public class CharacterSelect : MonoBehaviour
             nextButton.SetActive(true);
             turn++;
             player2Index = index;
+
+            if (player2Index > 2) FindObjectOfType<AudioManager>().Play(start[player2Index - 1]);
+            else if (player2Index < 2) FindObjectOfType<AudioManager>().Play(start[player2Index]);
         }
     }
 

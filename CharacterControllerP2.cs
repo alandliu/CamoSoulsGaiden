@@ -1,14 +1,29 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class CharacterControllerP2 : MonoBehaviour
 {
     [SerializeField]
     private GameObject spawnPoint;
 
+    // compound knight, radian, kotoko, alex
+
+    public int ID;
+    public int tempID;
+    public string[] clipNames = new string[] { "cSlash", "Punch", "kSlash", "Fire" };
+    public string[] deathClips = new string[] { "Boom1", "Boom2" };
+    public string[] start = new string[] {"kS", "rS", "aS"};
+    public string[] jump = new string[] {"kJ", "rJ", "aJ"};
+    public string[] dash = new string[] {"kDash", "rDash", "aDash"};
+    public string[] death = new string[] {"kDeath", "rDeath", "aDeath"};
+    public string[] hurt = new string[] {"kH1", "kH2", "rH1", "rH2", "aH1", "aH2"};
+    public string[] attack = new string[] {"kA1", "kA2", "kA3", "rA1", "rA2", "rA3", "aA1", "aA2", "aA3"};
+
     public GameObject opponent;
 
+    public HealthBar2 hb;
 
     public Animator anim;
 
@@ -27,6 +42,8 @@ public class CharacterControllerP2 : MonoBehaviour
     private float lastDash = -100f;
 
     private int comboNum = 0;
+    public int maxLife = 3;
+    public int curLife;
 
     private Rigidbody2D rb;
 
@@ -36,8 +53,9 @@ public class CharacterControllerP2 : MonoBehaviour
     private bool canFlip = true;
     private bool canDash = true;
     private bool canAttack = true;
+    private bool canDJump = true;
 
-    private bool canKnock = true;
+    public bool canKnock = true;
 
     private Vector3 characterScale;
 
@@ -57,11 +75,14 @@ public class CharacterControllerP2 : MonoBehaviour
     public float attackCoolDown;
     public float timeBetweenCombo;
 
+    public int mult = 1;
+
     // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        
+        curLife = maxLife;
+        hb.SetMaxHealth(maxLife);
     }
 
     // Update is called once per frame
@@ -82,7 +103,7 @@ public class CharacterControllerP2 : MonoBehaviour
             if (Time.time >= (lastDash + dashCoolDown)) AttempToDash();
         }
 
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetKeyDown(KeyCode.RightControl))
         {
             Attack();
         }
@@ -100,10 +121,48 @@ public class CharacterControllerP2 : MonoBehaviour
 
             rb.position += new Vector2(movement * movementSpeed * Time.deltaTime, 0);
 
-            if (Input.GetButtonDown("Jump") && Mathf.Abs(rb.velocity.y) < 0.001f)
+            if (Mathf.Abs(rb.velocity.y) < 0.001f) canDJump = true;
+
+            if (!isAttacking)
             {
-                rb.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
+                if (Input.GetButtonDown("Jump2") && (Mathf.Abs(rb.velocity.y) < 0.001f || canDJump))
+                {
+                    if (Mathf.Abs(rb.velocity.y) > 0.001f)
+                    {
+                        canDJump = false;
+                        rb.velocity = Vector2.zero;
+                    }
+                    rb.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
+                    anim.SetBool("jumping", true);
+                    anim.SetBool("falling", false);
+                    anim.SetBool("walking", false);
+
+                    if (ID > 2)
+                    {
+                        tempID = ID - 1;
+                        FindObjectOfType<AudioManager>().Play(jump[tempID]);
+                    }
+                    else if (ID < 2)
+                    {
+                        tempID = ID;
+                        FindObjectOfType<AudioManager>().Play(jump[tempID]);
+                    }
+                }
+
+                if (rb.velocity.y < -0.5f)
+                {
+                    anim.SetBool("falling", true);
+                    anim.SetBool("jumping", false);
+                    anim.SetBool("walking", false);
+                }
+                
             }
+            if (Mathf.Abs(rb.velocity.y) < 0.001f)
+            {
+                anim.SetBool("falling", false);
+                anim.SetBool("jumping", false);
+            }
+
 
         }
     }
@@ -132,6 +191,7 @@ public class CharacterControllerP2 : MonoBehaviour
         {
             if (dashTimeLeft > 0)
             {
+                canKnock = false;
                 canMove = false;
                 canFlip = false;
                 canAttack = false;
@@ -147,13 +207,14 @@ public class CharacterControllerP2 : MonoBehaviour
 
             if (dashTimeLeft <= 0)
             {
+                canKnock = true;
                 rb.velocity = Vector2.zero;
                 isDashing = false;
                 canMove = true;
                 canFlip = true;
                 canAttack = true;
                 anim.SetBool("dashing", false);
-                rb.isKinematic = false;
+                Physics2D.IgnoreLayerCollision(10, 9, false);
                 Physics2D.IgnoreCollision(opponent.GetComponent<Collider2D>(), GetComponent<Collider2D>(), false);
             }
         }
@@ -163,32 +224,12 @@ public class CharacterControllerP2 : MonoBehaviour
 
     void Attack()
     {
-        if (canAttack && !isAttacking)
+        if (canAttack && !isAttacking && (Time.realtimeSinceStartup - lastAttack >= attackCoolDown))
         {
+            canKnock = false;
             anim.SetTrigger("attack");
             isAttacking = true;
             attackTimeLeft = attackTime;
-            // Play attack animation according to combo
-
-            Debug.Log(Time.realtimeSinceStartup - lastAttack);
-
-
-            // Detect enemies (TBD)
-
-            /* Collider2D[] = hitEnemies = Physics2D.OverlapCirclaAll(attackPoint.position, attackRange, enemyLayers);
-             * 
-             * 
-             */
-
-            // Damage (TBD)
-
-            /* foreach(Collider 2D enemy in hitEnemies) {
-             *  Debug.Log("Hit!");
-             * 
-             * }
-             * 
-             * 
-             */
         }
     }
 
@@ -196,8 +237,9 @@ public class CharacterControllerP2 : MonoBehaviour
     {
         if (canDash)
         {
+            canKnock = false;
             Physics2D.IgnoreCollision(opponent.GetComponent<Collider2D>(), GetComponent<Collider2D>(), true);
-            rb.isKinematic = true;
+            Physics2D.IgnoreLayerCollision(10, 9, true);
             anim.SetBool("dashing", true);
             isDashing = true;
             dashTimeLeft = dashTime;
@@ -205,6 +247,17 @@ public class CharacterControllerP2 : MonoBehaviour
 
             PlayerAfterImagePool2.Instance.GetFromPool();
             lastImageXpos = transform.position.x;
+
+            if (ID > 2)
+            {
+                tempID = ID - 1;
+                FindObjectOfType<AudioManager>().Play(dash[tempID]);
+            }
+            else if (ID < 2)
+            {
+                tempID = ID;
+                FindObjectOfType<AudioManager>().Play(dash[tempID]);
+            }
         }
     }
 
@@ -212,39 +265,130 @@ public class CharacterControllerP2 : MonoBehaviour
     {
         if (message.Equals("2"))
         {
+            canKnock = false;
             canMove = false;
             canFlip = false;
             canDash = false;
+            anim.SetBool("jumping", false);
+            anim.SetBool("falling", false);
             rb.velocity = new Vector2(attackSpeed * movementSpeed * facingDirection, rb.velocity.y);
+
+            Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(this.gameObject.transform.GetChild(0).position, attackRange, enemyLayers);
+
+            foreach (Collider2D enemy in hitEnemies)
+            {
+                if (enemy.GetComponent<CharacterController>().canKnock)
+                {
+                    opponent.GetComponent<CharacterController>().knockBack(facingDirection);
+                }
+            }
+            FindObjectOfType<AudioManager>().Play(clipNames[ID]);
+
+            if (ID > 2)
+            {
+                tempID = ID - 1;
+                FindObjectOfType<AudioManager>().Play(hurt[3 * tempID + Random.Range(0, 3)]);
+            }
+            else if (ID < 2)
+            {
+                tempID = ID;
+                FindObjectOfType<AudioManager>().Play(hurt[3 * tempID + Random.Range(0, 3)]);
+            }
+
         }
         if (message.Equals("3"))
         {
             rb.velocity = new Vector2(0, 0);
+            Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(this.gameObject.transform.GetChild(0).position, attackRange, enemyLayers);
+
+
+            foreach (Collider2D enemy in hitEnemies)
+            {
+                    if (enemy.GetComponent<CharacterControllerP2>().canKnock)
+                    {
+                        opponent.GetComponent<CharacterControllerP2>().knockBack(facingDirection);
+                    }
+
+            }
         }
         if (message.Equals("1"))
         {
+            rb.constraints = RigidbodyConstraints2D.FreezePositionY;
+            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+            canKnock = false;
             canMove = false;
             canFlip = false;
             canDash = false;
+            anim.SetBool("jumping", false);
+            anim.SetBool("falling", false);
             rb.velocity = new Vector2(0, 0);
         }
         if (message.Equals("4"))
         {
+            rb.constraints = RigidbodyConstraints2D.None;
+            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+            canKnock = true;
             canMove = true;
             canFlip = true;
             canDash = true;
             isAttacking = false;
+            anim.SetBool("jumping", false);
+            anim.SetBool("falling", false);
             lastAttack = Time.realtimeSinceStartup;
         }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.gameObject.tag == "Death")
+        if (collision.gameObject.tag == "Death" && curLife > 0)
         {
-            Debug.Log("Died");
             transform.position = spawnPoint.transform.position;
             rb.velocity = Vector2.zero;
+            mult = 1;
+            curLife -= 1;
+            hb.SetHealth(curLife + 1);
+            FindObjectOfType<AudioManager>().Play(deathClips[Random.Range(0, 2)]);
+
+            if (ID > 2)
+            {
+                tempID = ID - 1;
+                FindObjectOfType<AudioManager>().Play(death[tempID]);
+            }
+            else if (ID < 2)
+            {
+                tempID = ID;
+                FindObjectOfType<AudioManager>().Play(death[tempID]);
+            }
+
+        } else if (curLife <= 0)
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+        }
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if (attackPoint == null) return;
+
+        Gizmos.DrawWireSphere(this.gameObject.transform.GetChild(0).position, attackRange);
+    }
+
+    public void knockBack(float oFacingDirection)
+    {
+        rb.AddForce(new Vector2(oFacingDirection * 5  * mult, 5.0f * mult), ForceMode2D.Impulse);
+        mult++;
+        anim.SetTrigger("knocked");
+        anim.SetBool("jumping", false);
+        anim.SetBool("falling", false);
+        if (ID > 2)
+        {
+            tempID = ID - 1;
+            FindObjectOfType<AudioManager>().Play(hurt[2 * tempID + Random.Range(0, 2)]);
+        }
+        else if (ID < 2)
+        {
+            tempID = ID;
+            FindObjectOfType<AudioManager>().Play(hurt[2 * tempID + Random.Range(0, 2)]);
         }
     }
 }

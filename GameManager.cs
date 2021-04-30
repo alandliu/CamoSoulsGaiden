@@ -22,6 +22,7 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         LoadCharacter();
+        FindObjectOfType<AudioManager>().Play("Music");
     }
 
     // Update is called once per frame
@@ -41,6 +42,8 @@ public class GameManager : MonoBehaviour
         player2.transform.position = spawnPoint2.transform.position;
 
         player1.GetComponent<CharacterController>().opponent = player2;
+        player1.GetComponent<CharacterController>().ID = characterIndex1;
         player2.GetComponent<CharacterControllerP2>().opponent = player1;
+        player2.GetComponent<CharacterControllerP2>().ID = characterIndex2;
     }
 }
